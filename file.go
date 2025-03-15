@@ -1,4 +1,5 @@
-package httpfile
+// Package httpfile provides an easy way to create HTTP handlers that respond with static data, possibly gzip compressed if requested by the client.
+package httpfile // import "vimagination.zapto.org/httpfile"
 
 import (
 	"bytes"
@@ -12,6 +13,7 @@ import (
 	"vimagination.zapto.org/httpencoding"
 )
 
+// Type file represents an http.Handler upon which you can set static data.
 type File struct {
 	name string
 
@@ -20,12 +22,14 @@ type File struct {
 	data, compressed []byte
 }
 
+// New creates a new File with the given name, which is used to apply Content-Type headers.
 func New(name string) *File {
 	return &File{name: name, modtime: time.Now()}
 }
 
 var isGzip = httpencoding.HandlerFunc(func(enc httpencoding.Encoding) bool { return enc == "gzip" })
 
+// ServeHTTP implements the http.Handler interface.
 func (f *File) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var buf bytes.Reader
 
@@ -47,6 +51,8 @@ func (f *File) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, f.name, modtime, &buf)
 }
 
+// ReadFrom reads all of the data from io.Reader and applies it to the file,
+// overwriting any existing data and setting the modtime to Now.
 func (f *File) ReadFrom(r io.Reader) (int64, error) {
 	file := f.Create()
 	defer file.Close()
@@ -54,6 +60,7 @@ func (f *File) ReadFrom(r io.Reader) (int64, error) {
 	return io.Copy(file, r)
 }
 
+// Chtime sets the motime to the given time.
 func (f *File) Chtime(t time.Time) {
 	f.mu.Lock()
 	f.modtime = t
