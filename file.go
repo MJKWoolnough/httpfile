@@ -65,7 +65,12 @@ type file struct {
 	data []byte
 }
 
-func (f *File) Create() io.WriteCloser {
+type Writer interface {
+	io.WriteCloser
+	io.StringWriter
+}
+
+func (f *File) Create() Writer {
 	return &file{
 		file: f,
 	}
@@ -79,6 +84,16 @@ func (f *file) Write(p []byte) (int, error) {
 	f.data = append(f.data, p...)
 
 	return len(p), nil
+}
+
+func (f *file) WriteString(str string) (int, error) {
+	if f.file == nil {
+		return 0, fs.ErrClosed
+	}
+
+	f.data = append(f.data, str...)
+
+	return len(str), nil
 }
 
 func (f *file) Close() error {
