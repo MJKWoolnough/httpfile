@@ -41,7 +41,7 @@ func TestFile(t *testing.T) {
 	earliest = time.Now().Add(-time.Second)
 	f := file.Create()
 
-	io.WriteString(f, "some data")
+	f.Write([]byte("some data"))
 	io.WriteString(f, ", and some more data")
 	f.Close()
 
@@ -80,7 +80,7 @@ func TestFile(t *testing.T) {
 	earliest = time.Now().Add(-time.Second)
 	f = file.Create()
 
-	io.WriteString(f, "checking compressed data")
+	f.WriteString("checking compressed data")
 	f.Close()
 
 	latest = time.Now().Add(time.Second)
