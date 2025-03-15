@@ -54,6 +54,12 @@ func (f *File) ReadFrom(r io.Reader) (int64, error) {
 	return io.Copy(file, r)
 }
 
+func (f *File) Chtime(t time.Time) {
+	f.mu.Lock()
+	f.modtime = t
+	f.mu.Unlock()
+}
+
 type file struct {
 	file *File
 	data []byte
