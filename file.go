@@ -47,6 +47,13 @@ func (f *File) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, f.name, modtime, &buf)
 }
 
+func (f *File) ReadFrom(r io.Reader) (int64, error) {
+	file := f.Create()
+	defer file.Close()
+
+	return io.Copy(file, r)
+}
+
 type file struct {
 	file *File
 	data []byte
