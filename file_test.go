@@ -108,3 +108,30 @@ func TestFile(t *testing.T) {
 		t.Errorf("expecting to read content %q, got %q", "checking compressed data", sb.String())
 	}
 }
+
+func TestReadFrom(t *testing.T) {
+	const data = "<html><head><body><h1>Hello, World</h1></body></html>"
+
+	file := New("data.html")
+
+	server := httptest.NewServer(file)
+	defer server.Close()
+
+	n, _ := file.ReadFrom(strings.NewReader(data))
+	if n != 53 {
+		t.Errorf("expecting to write 53 bytes, wrote %d", n)
+	}
+
+	r, err := server.Client().Get(server.URL)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	var sb strings.Builder
+
+	io.Copy(&sb, r.Body)
+
+	if sb.String() != data {
+		t.Errorf("expecting to read content %q, got %q", data, sb.String())
+	}
+}
