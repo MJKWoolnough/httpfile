@@ -135,3 +135,24 @@ func TestReadFrom(t *testing.T) {
 		t.Errorf("expecting to read content %q, got %q", data, sb.String())
 	}
 }
+
+func TestChtime(t *testing.T) {
+	expected := time.Unix(12345, 0)
+	file := New("data.txt")
+
+	file.Chtime(expected)
+
+	server := httptest.NewServer(file)
+	defer server.Close()
+
+	r, err := server.Client().Head(server.URL)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	if modtime, err := time.Parse(time.RFC1123, r.Header.Get("Last-Modified")); err != nil {
+		t.Errorf("error parsing modtime: %s", err)
+	} else if !modtime.Equal(expected) {
+		t.Errorf("expecting modtime to be %s, got %s", expected, modtime)
+	}
+}
