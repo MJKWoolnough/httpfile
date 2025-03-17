@@ -94,6 +94,10 @@ func (f *File) Chtime(t time.Time) {
 	f.mu.Unlock()
 }
 
+func (f *File) Name() string {
+	return f.name
+}
+
 type file struct {
 	file *File
 	data []byte
