@@ -91,7 +91,7 @@ func (f *File) WriteTo(w io.Writer) (int64, error) {
 	return int64(n), err
 }
 
-// Chtime sets the motime to the given time.
+// Chtime sets the modtime to the given time.
 func (f *File) Chtime(t time.Time) {
 	f.mu.Lock()
 	f.modtime = t
