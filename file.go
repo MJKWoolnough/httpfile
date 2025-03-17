@@ -24,11 +24,14 @@ type File struct {
 	data, compressed []byte
 }
 
-// New creates a new File with the given name, which is used to apply Content-Type headers.
+// New creates a new File with the given name, which is used to apply
+// Content-Type headers.
 func New(name string) *File {
 	return &File{name: name, modtime: time.Now(), compressed: empty}
 }
 
+// NewWithData create a new File with the given name, and sets the initial
+// uncompressed data to that provided.
 func NewWithData(name string, data []byte) *File {
 	var buf bytes.Buffer
 
@@ -77,6 +80,7 @@ func (f *File) ReadFrom(r io.Reader) (int64, error) {
 	return io.Copy(file, r)
 }
 
+// WriteTo writes the uncompressed data to the given writer.
 func (f *File) WriteTo(w io.Writer) (int64, error) {
 	f.mu.RLock()
 	data := f.data
@@ -94,6 +98,7 @@ func (f *File) Chtime(t time.Time) {
 	f.mu.Unlock()
 }
 
+// Name returns the name given during File creation.
 func (f *File) Name() string {
 	return f.name
 }
@@ -108,6 +113,8 @@ type Writer interface {
 	io.StringWriter
 }
 
+// Create opens a Writer that can be used to write the data for the File. Close
+// must be called on the resulting Writer for the data to be accepted.
 func (f *File) Create() Writer {
 	return &file{
 		file: f,
