@@ -29,6 +29,21 @@ func New(name string) *File {
 	return &File{name: name, modtime: time.Now(), compressed: empty}
 }
 
+func NewWithData(name string, data []byte) *File {
+	var buf bytes.Buffer
+
+	f := New(name)
+	f.data = data
+	g := gzip.NewWriter(&buf)
+
+	g.Write(data)
+	g.Close()
+
+	f.compressed = buf.Bytes()
+
+	return f
+}
+
 var isGzip = httpencoding.HandlerFunc(func(enc httpencoding.Encoding) bool { return enc == "gzip" })
 
 // ServeHTTP implements the http.Handler interface.
