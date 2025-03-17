@@ -103,25 +103,24 @@ func (f *File) Name() string {
 	return f.name
 }
 
-type file struct {
+// A Writer is bound to the File is was created from, buffering data that is
+// written to it.Writer. Upon Closing, that data will be compressed and both
+// the uncompressed and compressed data will be replaced on the File.
+type Writer struct {
 	file *File
 	data []byte
 }
 
-type Writer interface {
-	io.WriteCloser
-	io.StringWriter
-}
-
 // Create opens a Writer that can be used to write the data for the File. Close
 // must be called on the resulting Writer for the data to be accepted.
-func (f *File) Create() Writer {
-	return &file{
+func (f *File) Create() *Writer {
+	return &Writer{
 		file: f,
 	}
 }
 
-func (f *file) Write(p []byte) (int, error) {
+// Write is an implementation of the io.Writer interface.
+func (f *Writer) Write(p []byte) (int, error) {
 	if f.file == nil {
 		return 0, fs.ErrClosed
 	}
@@ -131,7 +130,8 @@ func (f *file) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func (f *file) WriteString(str string) (int, error) {
+// WriteString is an implementation of the io.StringWriter interface.
+func (f *Writer) WriteString(str string) (int, error) {
 	if f.file == nil {
 		return 0, fs.ErrClosed
 	}
@@ -141,7 +141,10 @@ func (f *file) WriteString(str string) (int, error) {
 	return len(str), nil
 }
 
-func (f *file) Close() error {
+// Close is an implementation of the io.Close interface.
+//
+// This method must be called for the written data to be accepted on the File.
+func (f *Writer) Close() error {
 	if f.file == nil {
 		return fs.ErrClosed
 	}
@@ -161,7 +164,7 @@ func (f *file) Close() error {
 
 	f.file.mu.Unlock()
 
-	*f = file{}
+	*f = Writer{}
 
 	return nil
 }
