@@ -77,6 +77,16 @@ func (f *File) ReadFrom(r io.Reader) (int64, error) {
 	return io.Copy(file, r)
 }
 
+func (f *File) WriteTo(w io.Writer) (int64, error) {
+	f.mu.RLock()
+	data := f.data
+	f.mu.RUnlock()
+
+	n, err := w.Write(data)
+
+	return int64(n), err
+}
+
 // Chtime sets the motime to the given time.
 func (f *File) Chtime(t time.Time) {
 	f.mu.Lock()
