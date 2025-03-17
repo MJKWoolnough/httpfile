@@ -13,6 +13,8 @@ import (
 	"vimagination.zapto.org/httpencoding"
 )
 
+var empty = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\x03\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")
+
 // Type file represents an http.Handler upon which you can set static data.
 type File struct {
 	name string
@@ -24,7 +26,7 @@ type File struct {
 
 // New creates a new File with the given name, which is used to apply Content-Type headers.
 func New(name string) *File {
-	return &File{name: name, modtime: time.Now()}
+	return &File{name: name, modtime: time.Now(), compressed: empty}
 }
 
 var isGzip = httpencoding.HandlerFunc(func(enc httpencoding.Encoding) bool { return enc == "gzip" })
