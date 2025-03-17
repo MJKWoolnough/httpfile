@@ -13,7 +13,7 @@ import (
 	"vimagination.zapto.org/httpencoding"
 )
 
-var empty = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\x03\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")
+var empty = [20]byte{0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03, 0x03}
 
 // Type file represents an http.Handler upon which you can set static data.
 type File struct {
@@ -27,7 +27,7 @@ type File struct {
 // New creates a new File with the given name, which is used to apply
 // Content-Type headers.
 func New(name string) *File {
-	return &File{name: name, modtime: time.Now(), compressed: empty}
+	return &File{name: name, modtime: time.Now(), compressed: empty[:]}
 }
 
 // NewWithData create a new File with the given name, and sets the initial
