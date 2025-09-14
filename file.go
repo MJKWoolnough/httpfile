@@ -104,8 +104,8 @@ func (f *File) Name() string {
 }
 
 // A Writer is bound to the File is was created from, buffering data that is
-// written to it.Writer. Upon Closing, that data will be compressed and both
-// the uncompressed and compressed data will be replaced on the File.
+// written to it. Upon Closing, that data will be compressed and both the
+// uncompressed and compressed data will be replaced on the File.
 type Writer struct {
 	file *File
 	data []byte
