@@ -19,7 +19,10 @@ func TestFile(t *testing.T) {
 
 	client := server.Client()
 
-	r, err := client.Head(server.URL)
+	req, _ := http.NewRequest(http.MethodHead, server.URL, nil)
+	req.Header.Set("Accept-Encoding", "identity")
+
+	r, err := client.Do(req)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -47,8 +50,8 @@ func TestFile(t *testing.T) {
 
 	latest = time.Now().Add(time.Second)
 
-	req, _ := http.NewRequest(http.MethodGet, server.URL, nil)
-	req.Header.Set("Accept-Encoding", "")
+	req, _ = http.NewRequest(http.MethodGet, server.URL, nil)
+	req.Header.Set("Accept-Encoding", "identity")
 
 	r, err = client.Do(req)
 	if err != nil {

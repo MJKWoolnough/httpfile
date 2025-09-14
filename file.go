@@ -47,19 +47,36 @@ func NewWithData(name string, data []byte) *File {
 	return f
 }
 
-var isGzip = httpencoding.HandlerFunc(func(enc httpencoding.Encoding) bool { return enc == "gzip" })
+type requestGzip bool
+
+func (r *requestGzip) Handle(enc httpencoding.Encoding) bool {
+	if enc == "gzip" || httpencoding.IsWildcard(enc) && !httpencoding.IsDisallowedInWildcard(enc, "gzip") {
+		*r = true
+
+		return true
+	}
+
+	return enc == "" || httpencoding.IsWildcard(enc) && !httpencoding.IsDisallowedInWildcard(enc, "")
+}
 
 // ServeHTTP implements the http.Handler interface.
 func (f *File) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var buf bytes.Reader
+	var (
+		buf         bytes.Reader
+		requestGzip requestGzip
+	)
 
-	wantsGzip := httpencoding.HandleEncoding(r, isGzip)
+	if !httpencoding.HandleEncoding(r, &requestGzip) {
+		httpencoding.InvalidEncoding(w)
+
+		return
+	}
 
 	f.mu.RLock()
 
 	modtime := f.modtime
 
-	if wantsGzip {
+	if requestGzip {
 		buf.Reset(f.compressed)
 		w.Header().Add("Content-Encoding", "gzip")
 	} else {
