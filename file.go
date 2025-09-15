@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -79,6 +80,11 @@ func (f *File) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if requestGzip {
 		buf.Reset(f.compressed)
 		w.Header().Add("Content-Encoding", "gzip")
+
+		w = &wrapResponseWriter{
+			ResponseWriter: w,
+			size:           int64(len(f.compressed)),
+		}
 	} else {
 		buf.Reset(f.data)
 	}
@@ -86,6 +92,19 @@ func (f *File) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	f.mu.RUnlock()
 
 	http.ServeContent(w, r, f.name, modtime, &buf)
+}
+
+type wrapResponseWriter struct {
+	http.ResponseWriter
+	size int64
+}
+
+func (w *wrapResponseWriter) WriteHeader(code int) {
+	if w.Header().Get("Content-Encoding") == "" {
+		w.Header().Set("Content-Length", strconv.FormatInt(w.size, 10))
+	}
+
+	w.ResponseWriter.WriteHeader(code)
 }
 
 // ReadFrom reads all of the data from io.Reader and applies it to the file,
