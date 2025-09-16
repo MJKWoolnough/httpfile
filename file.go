@@ -100,7 +100,7 @@ type wrapResponseWriter struct {
 }
 
 func (w *wrapResponseWriter) WriteHeader(code int) {
-	if w.Header().Get("Content-Encoding") == "" {
+	if w.Header().Get("Content-Length") == "" {
 		w.Header().Set("Content-Length", strconv.FormatInt(w.size, 10))
 	}
 
