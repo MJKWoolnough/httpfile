@@ -19,27 +19,8 @@ func TestFile(t *testing.T) {
 
 	client := server.Client()
 
-	req, _ := http.NewRequest(http.MethodHead, server.URL, nil)
-	req.Header.Set("Accept-Encoding", "identity")
-
-	r, err := client.Do(req)
-	if err != nil {
-		t.Fatalf("unexpected error: %s", err)
-	}
-
-	if r.ContentLength != 0 {
-		t.Errorf("expecting to have no size, got %d", r.ContentLength)
-	}
-
-	if mime := r.Header.Get("Content-Type"); mime != "application/json" {
-		t.Errorf("expecting to have json mime type, got %q", mime)
-	}
-
-	if modtime, err := time.Parse(time.RFC1123, r.Header.Get("Last-Modified")); err != nil {
-		t.Errorf("error parsing modtime: %s", err)
-	} else if earliest.After(modtime) || modtime.After(latest) {
-		t.Errorf("expecting modtime to be between %s and %s, got %s", earliest, latest, modtime)
-	}
+	testFile(t, server.URL, client, 1, http.MethodHead, "identity", "", earliest, latest, false)
+	testFile(t, server.URL, client, 2, http.MethodGet, "identity", "", earliest, latest, false)
 
 	earliest = time.Now().Add(-time.Second)
 	f := file.Create()
@@ -50,35 +31,7 @@ func TestFile(t *testing.T) {
 
 	latest = time.Now().Add(time.Second)
 
-	req, _ = http.NewRequest(http.MethodGet, server.URL, nil)
-	req.Header.Set("Accept-Encoding", "identity")
-
-	r, err = client.Do(req)
-	if err != nil {
-		t.Fatalf("unexpected error: %s", err)
-	}
-
-	if r.Uncompressed != false {
-		t.Errorf("expecting to receive uncompressed data, didn't!")
-	}
-
-	if r.ContentLength != 29 {
-		t.Errorf("expecting to have size of 29 bytes, got %d", r.ContentLength)
-	}
-
-	var sb strings.Builder
-
-	io.Copy(&sb, r.Body)
-
-	if sb.String() != "some data, and some more data" {
-		t.Errorf("expecting to read content %q, got %q", "some data, and some more data", sb.String())
-	}
-
-	if modtime, err := time.Parse(time.RFC1123, r.Header.Get("Last-Modified")); err != nil {
-		t.Errorf("error parsing modtime: %s", err)
-	} else if earliest.After(modtime) || modtime.After(latest) {
-		t.Errorf("expecting modtime to be between %s and %s, got %s", earliest, latest, modtime)
-	}
+	testFile(t, server.URL, client, 3, http.MethodGet, "identity", "some data, and some more data", earliest, latest, false)
 
 	earliest = time.Now().Add(-time.Second)
 	f = file.Create()
@@ -88,27 +41,55 @@ func TestFile(t *testing.T) {
 
 	latest = time.Now().Add(time.Second)
 
-	r, err = client.Get(server.URL)
-	if err != nil {
-		t.Fatalf("unexpected error: %s", err)
+	testFile(t, server.URL, client, 4, http.MethodGet, "", "checking compressed data", earliest, latest, true)
+}
+
+func testFile(t *testing.T, url string, client *http.Client, test int, method, encoding, data string, earliest, latest time.Time, compressed bool) {
+	var (
+		r   *http.Response
+		err error
+	)
+
+	if encoding != "" {
+		req, _ := http.NewRequest(method, url, nil)
+
+		req.Header.Set("Accept-Encoding", encoding)
+
+		r, err = client.Do(req)
+	} else {
+		r, err = client.Get(url)
 	}
 
-	if r.Uncompressed != true {
-		t.Errorf("expecting to receive compressed data, didn't!")
+	if err != nil {
+		t.Fatalf("test %d: unexpected error: %s", test, err)
+	}
+
+	if encoding != "" {
+		if r.ContentLength != int64(len(data)) {
+			t.Errorf("test %d: expecting to have size %d, got %d", test, len(data), r.ContentLength)
+		}
+	}
+
+	if mime := r.Header.Get("Content-Type"); mime != "application/json" {
+		t.Errorf("test %d: expecting to have json mime type, got %q", test, mime)
+	}
+
+	if r.Uncompressed != compressed {
+		t.Errorf("test %d: expecting Uncompressed to be %v, got %v", test, r.Uncompressed, compressed)
 	}
 
 	if modtime, err := time.Parse(time.RFC1123, r.Header.Get("Last-Modified")); err != nil {
-		t.Errorf("error parsing modtime: %s", err)
+		t.Errorf("test %d: error parsing modtime: %s", test, err)
 	} else if earliest.After(modtime) || modtime.After(latest) {
-		t.Errorf("expecting modtime to be between %s and %s, got %s", earliest, latest, modtime)
+		t.Errorf("test %d: expecting modtime to be between %s and %s, got %s", test, earliest, latest, modtime)
 	}
 
-	sb.Reset()
+	var sb strings.Builder
 
 	io.Copy(&sb, r.Body)
 
-	if sb.String() != "checking compressed data" {
-		t.Errorf("expecting to read content %q, got %q", "checking compressed data", sb.String())
+	if sb.String() != data {
+		t.Errorf("test %d: expecting to read content %q, got %q", test, data, sb.String())
 	}
 }
 
