@@ -1,111 +1,63 @@
 # httpfile
+
+[![CI](https://github.com/MJKWoolnough/httpfile/actions/workflows/go-checks.yml/badge.svg)](https://github.com/MJKWoolnough/httpfile/actions)
+[![Go Reference](https://pkg.go.dev/badge/vimagination.zapto.org/httpfile.svg)](https://pkg.go.dev/vimagination.zapto.org/httpfile)
+[![Go Report Card](https://goreportcard.com/badge/vimagination.zapto.org/httpfile)](https://goreportcard.com/report/vimagination.zapto.org/httpfile)
+
 --
     import "vimagination.zapto.org/httpfile"
 
-Package httpfile provides an easy way to create HTTP handlers that respond with
-static data, possibly gzip compressed if requested by the client.
+Package httpfile provides an easy way to create HTTP handlers that respond with static data, possibly gzip compressed if requested by the client.
+
+## Highlights
+
+ - Create an updatable `http.Handler` from static data.
+ - Sends either gzip-compressed or uncompressed data based on `Accept-Encoding` header.
 
 ## Usage
 
-#### type File
-
 ```go
-type File struct {
+package main
+
+import (
+	_ "embed"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+
+	"vimagination.zapto.org/httpfile"
+)
+
+func main() {
+	handler := httpfile.NewWithData("file.json", []byte(`{"hello", "world!"}`))
+
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set("Accept-encoding", "identity")
+
+	handler.ServeHTTP(w, r)
+
+	fmt.Println(w.Body)
+
+	handler.ReadFrom(bytes.NewBuffer([]byte(`{"foo": "bar"}`)))
+
+	r.Header.Set("Accept-encoding", "identity")
+
+	w = httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	fmt.Println(w.Body)
+
+	// Output:
+	// {"hello", "world!"}
+	// {"foo": "bar"}
+}
 }
 ```
 
-Type file represents an http.Handler upon which you can set static data.
+## Documentation
 
-#### func  New
+Full API docs can be found at:
 
-```go
-func New(name string) *File
-```
-New creates a new File with the given name, which is used to apply Content-Type
-headers.
-
-#### func  NewWithData
-
-```go
-func NewWithData(name string, data []byte) *File
-```
-NewWithData create a new File with the given name, and sets the initial
-uncompressed data to that provided.
-
-#### func (*File) Chtime
-
-```go
-func (f *File) Chtime(t time.Time)
-```
-Chtime sets the modtime to the given time.
-
-#### func (*File) Create
-
-```go
-func (f *File) Create() *Writer
-```
-Create opens a Writer that can be used to write the data for the File. Close
-must be called on the resulting Writer for the data to be accepted.
-
-#### func (*File) Name
-
-```go
-func (f *File) Name() string
-```
-Name returns the name given during File creation.
-
-#### func (*File) ReadFrom
-
-```go
-func (f *File) ReadFrom(r io.Reader) (int64, error)
-```
-ReadFrom reads all of the data from io.Reader and applies it to the file,
-overwriting any existing data and setting the modtime to Now.
-
-#### func (*File) ServeHTTP
-
-```go
-func (f *File) ServeHTTP(w http.ResponseWriter, r *http.Request)
-```
-ServeHTTP implements the http.Handler interface.
-
-#### func (*File) WriteTo
-
-```go
-func (f *File) WriteTo(w io.Writer) (int64, error)
-```
-WriteTo writes the uncompressed data to the given writer.
-
-#### type Writer
-
-```go
-type Writer struct {
-}
-```
-
-A Writer is bound to the File is was created from, buffering data that is
-written to it.Writer. Upon Closing, that data will be compressed and both the
-uncompressed and compressed data will be replaced on the File.
-
-#### func (*Writer) Close
-
-```go
-func (f *Writer) Close() error
-```
-Close is an implementation of the io.Close interface.
-
-This method must be called for the written data to be accepted on the File.
-
-#### func (*Writer) Write
-
-```go
-func (f *Writer) Write(p []byte) (int, error)
-```
-Write is an implementation of the io.Writer interface.
-
-#### func (*Writer) WriteString
-
-```go
-func (f *Writer) WriteString(str string) (int, error)
-```
-WriteString is an implementation of the io.StringWriter interface.
+https://pkg.go.dev/vimagination.zapto.org/httpfile
